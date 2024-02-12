@@ -108,6 +108,11 @@
             <time  class="article-date" datetime="2024-02-12T12:41:38.000Z" itemprop="datePublished">2024-02-12</time>
           </h2>
           
+            <h2 class="last-time">
+              <span>最后更新于</span>
+              <time  class="article-updated" datetime="2024-02-12T18:46:52.325Z" itemprop="dateUpdated">2024-02-13</time>
+            </h2>
+          
           
           <ul class="wrap-list dark">
   
@@ -137,13 +142,56 @@
       
       <section class="article-entry markdown-body layout-margin content-padding--large soft-size--large soft-style--box">
         <h2 id="渗透阶段"><a href="#渗透阶段" class="headerlink" title="渗透阶段"></a>渗透阶段</h2><p>老规矩，挂vpn开机用nmap扫描</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo nmap -sC -sV -sU 10.129.95.185</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo nmap -sC -sV 10.129.95.185</span><br></pre></td></tr></table></figure>
 
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-sC <span class="comment">#使用默认脚本</span></span><br><span class="line">-sV	<span class="comment">#探测服务版本信息</span></span><br><span class="line">-sU	<span class="comment">#UDP扫描</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-sC <span class="comment">#使用默认脚本</span></span><br><span class="line">-sV	<span class="comment">#探测服务版本信息</span></span><br></pre></td></tr></table></figure>
 
-<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212213402144.png" class="" title="image-20240212213402144">
+<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212214558133.png" class="" title="image-20240212214558133">
+
+<p>80端口开着，再看第一个问题，再扫一下udp端口</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo nmap -sU 10.129.95.185</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-sU <span class="comment">#扫描udp</span></span><br></pre></td></tr></table></figure>
+
+<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212222128893.png" class="" title="image-20240212222128893">
 
 <p>看扫描结果，第一题的答案是<code>tftp</code></p>
+<p>浏览器访问80端口，看样子是用到本地文件包含漏洞，第二题答案是<code>Local File Inclusion</code></p>
+<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212222147928.png" class="" title="image-20240212222147928">
+
+<p>试一下读&#x2F;etc&#x2F;passwd，成功读到</p>
+<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212224212604.png" class="" title="image-20240212224212604">
+
+<p>第三题问题：TFTP 用于存储文件的默认系统文件夹是什么？</p>
+<p>直接google，第三题的答案是<code> /var/lib/tftpboot/</code></p>
+<p>tftp默认是不需要身份验证的，可以直接利用tftp来上传一个shell，然后用文件包含漏洞来读取，这样就可以得到一个可以利用的shell</p>
+<p>这里用的shell是这个项目：<a target="_blank" rel="noopener" href="https://github.com/pentestmonkey/php-reverse-shell">https://github.com/pentestmonkey/php-reverse-shell</a></p>
+<p>修改文件中ip地址和端口为反弹的地址<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212232706504.png" class="" title="image-20240212232706504"></p>
+<p>连接tftp，上传shell</p>
+<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212233751367.png" class="" title="image-20240212233751367">
+
+<p>监听端口</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nc -lvnp 1234</span><br></pre></td></tr></table></figure>
+
+<p>这里用目录穿越方式访问shell<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212234041607.png" class="" title="image-20240212234041607"></p>
+<p>shell成功反弹<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212234517197.png" class="" title="image-20240212234517197"></p>
+<p>运行命令获得交互式shell</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">script /dev/null -c bash</span><br></pre></td></tr></table></figure>
+
+<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212234630691.png" class="" title="image-20240212234630691">
+
+<p>在&#x2F;var&#x2F;www&#x2F;html路径下的.htpasswd得到mike的密码</p>
+<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240213010226995.png" class="" title="image-20240213010226995">
+
+<p>第四题答案<code>.htpasswd</code></p>
+<p>切换到mike账号</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">su mike</span><br></pre></td></tr></table></figure>
+
+<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240213010535479.png" class="" title="image-20240213010535479">
+
+<p>得到user的flag</p>
+<h2 id="权限提升"><a href="#权限提升" class="headerlink" title="权限提升"></a>权限提升</h2><p>查看mike权限，发现在lxd群组里，第五题答案是<code>lxd</code></p>
+<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240213010807950.png" class="" title="image-20240213010807950">
 
       </section>
 

